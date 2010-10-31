@@ -1,0 +1,5 @@
+; $Id$
+name = "Voyeur"
+description = "Voyeur is a web-based text analysis environment. The Voyeur module analyzes or &quot;reveals&quot; any node or collection of nodes within your Drupal website."
+core = 6.x
+php = 5.2

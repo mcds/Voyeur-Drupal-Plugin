@@ -1,0 +1,45 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Provides install and uninstall functions for the Voyeur module.
+ *
+ * The Voyeur module implements many concepts and methods derived from
+ * the CommentRSS module found here: http://drupal.org/project/commentrss.
+ * Thank you Gábor Hojtsy for your hard work.
+ */
+ 
+/**
+ * Implementation of hook_install().
+ * Sets Voyeur module weight to -1 in the database.
+ */
+function voyeur_install() {
+  // Set module weight to run before others.
+  db_query("UPDATE {system} SET weight = -1 WHERE type = 'module' AND name = 'voyeur'");
+  // Set message to fresh install users.
+  drupal_set_message(st("Voyeur installed successfully! Settings are available under !link",
+    array( '!link' => l(st('Administer') . ' > ' . st('Site configuration') . '>' . 'Voyeur ' . st('module settings'),  'admin/settings/voyeur/settings' ) . '.')
+  ));
+}
+
+/**
+ * Implementation of hook_uninstall().
+ * Deletes Voyeur specific variables from the database.
+ */
+function voyeur_uninstall() {
+  // Remove variables.
+  $variables = array(
+    'voyeur_by_user',
+    'voyeur_tool',
+    'voyeur_height',
+    'voyeur_width',
+    'voyeur_filters',
+    'voyeur_terms',
+    'voyeur_time',
+    'voyeur_max'
+  );
+  foreach ($variables as $variable) {
+    variable_del($variable);
+  }
+}

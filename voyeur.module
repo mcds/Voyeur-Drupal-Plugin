@@ -1,0 +1,463 @@
+<?php
+// $Id$
+
+/**
+ * @file
+ * Publishes the RSS feed to be read by Voyeur, and sets up
+ * the block to display Voyeur information.
+ *
+ * The Voyeur module implements many concepts and methods derived from
+ * the CommentRSS module found here: http://drupal.org/project/commentrss.
+ * Thank you Gábor Hojtsy for your hard work.
+ */
+
+/**
+* Implementation of hook_init().
+*
+* Simply loads the include file, 'voyeurrss.inc'.
+*/
+function voyeur_init() {
+  module_load_include('inc', 'voyeur', 'voyeurrss');
+}
+
+/**
+* Implementation of hook_help().
+*
+* Displays help and module information.
+*
+* @param $path
+*    The path of the site we're displaying help for.
+* @param array $arg
+*    An array that holds the current path as would be returned from arg() function.
+*
+* @return
+*    Help text for the path.
+*/
+function voyeur_help($path, $arg) {
+  $output = '';
+  switch ($path) {
+  case "admin/help#voyeur":
+    //$output = '<p>Voyeur '.  t("reveals and analyzes text within specified nodes.") .'</p>';
+    $output = '<p>Voyeur ' . t('is a web-based text analysis environment. It is designed to be user-friendly, flexible  and powerful.');
+    $output .= ' Voyeur ' . t('is part of the') . ' Hermeneuti.ca, ' . t('a collaborative project to develop and theorize text analysis tools and text analysis rhetoric.') . '</p>';
+    $output .= t('The') . ' Voyeur ' . t('module for Drupal allows users to implement the power of') . ' Voyeur ' . t('to analyze or "reveal" nodes within your Drupal website.') . '</p>';
+    $output .= '<p>' . t("The actual tool can be found here: !url.", array('!url' => l('http://voyeurtools.org', 'http://voyeurtools.org', array('attributes' => array('target' => '_blank'))))) . '</p>';
+    break;
+  }
+  return $output;
+} // end voyeur_help()
+
+/**
+* Implementation of hook_menu().
+*
+* Sets up the pages that Voyeur uses.
+*
+* @return array
+*    An array of pages relating to Voyeur and their info.
+*/
+function voyeur_menu() {
+  $items = array();
+
+  $items['admin/settings/voyeur'] = array(
+    'title' => 'Voyeur ' . t('module settings'),
+    'description' => 'Change general settings for the Voyeur block, and change filters for text analysis.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('voyeur_admin'),
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  // Create the seperate feed page for Voyeur to read in.
+  // (Only if the user / public has access to node content.)
+  $items['vrss'] = array(
+    'title' => '',
+    'page callback' => 'voyeurrss_handler',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+    'file' => 'voyeurrss.inc',
+  );
+
+  return $items;
+} // end voyeur_menu()
+
+/**
+* Implementation of hook_admin().
+*
+* Create the forms used by the admin to configure Voyeur.
+*
+* @return array
+*    An array of forms for the Voyeur admin settings page.
+*/
+function voyeur_admin() {
+  $form = array();
+  
+  $form['general'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('General settings'),
+    '#collapsible' => FALSE
+  );
+
+  $form['general']['voyeur_width'] = array
+    (
+    '#type'             => 'textfield',
+    '#title'            => t('Width (px)'),
+    '#default_value'    => variable_get('voyeur_width', 200),
+    '#size'             => 2,
+    '#maxlength'        => 3,
+    '#required'         => TRUE,
+    );
+  
+  $form['general']['voyeur_height'] = array
+    (
+    '#type'             => 'textfield',
+    '#title'            => t('Height (px)'),
+    '#default_value'    => variable_get('voyeur_height', 250),
+    '#size'             => 2,
+    '#maxlength'        => 3,
+    '#required'         => TRUE,
+    );
+  
+  $form['general']['voyeur_by_user'] = array
+  (
+  '#type'             => 'checkboxes',
+  '#options'          => array
+      (
+        'allow_auto_reveal' => 'Voyeur ' . t('launches automatically on page load.'),
+        'allow_user'        => t('Allow users to choose') . ' Voyeur ' . t('options.'),
+        'allow_node'        => t('Generate links to reveal individual nodes.')
+      ),
+  '#default_value'  => variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => ''))
+  );
+
+  $form['filter'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Filter settings'),
+    '#description' => t('These settings determine which nodes') . ' Voyeur ' . t('will analyze or "reveal".'),
+    '#collapsible' => FALSE
+  );
+  
+  $form['filter']['voyeur_tool'] = array
+    (
+    '#type'             => 'select',
+    '#title'            => t('Tool'),
+    '#default_value'    => variable_get('voyeur_tool', 'Cirrus'),
+    '#options'          => array
+      (
+        'Bubbles'                   => t('Bubbles'),
+        'Cirrus'                    => 'Cirrus',
+        'CorpusTypeFrequenciesGrid' => t('Frequency Grid'),
+        'Links'                     => t('Links'),
+        'Reader'                    => t('Reader'),
+        'CorpusSummary'             => t('Summary'),
+        'WordCountFountain'         => t('Word Count Fountain'),
+      )
+    );
+  
+  // Find necessary filters that can be displayed (Function is within voyeurrss.inc).
+  $voyeur_filters = voyeurrss_find_filters(); 
+
+  // Only provide filters if they exist.
+  if (!empty($voyeur_filters['possible_options'])) {
+    $form['filter']['voyeur_filters'] = array
+      (
+      '#type'             => 'checkboxes',
+      '#title'            => t('Filter by Node Type'),
+      '#options'          => $voyeur_filters['possible_options'],
+      '#default_value'    => variable_get('voyeur_filters', $voyeur_filters['default_options']),
+      );
+  }
+
+  // Only provide filtering by term if taxonomy enabled.
+  if (module_exists('taxonomy')) {
+    $form['filter']['voyeur_terms'] = array
+      (
+      '#type'             => 'textfield',
+      '#title'            => t('Filter by Terms'),
+      '#default_value'    => variable_get('voyeur_terms', ''),
+      '#size'             => 20,
+      '#description'      => t('Seperate terms by commas.') . '  ","',
+      '#required'         => FALSE
+      );
+  }
+
+  $form['filter']['voyeur_time'] = array
+    (
+    '#type'             => 'select',
+    '#title'            => t('Filter by Time'),
+    '#default_value'    => variable_get('voyeur_time', 'month'),
+    '#options'          => array
+      (
+        'none'                  => t('None'),
+        'day'                   => t('Last 24 hours'),
+        'week'                  => t('Last week'),
+        '2weeks'                => t('Last two weeks'),
+        'month'                 => t('Last month'),
+        '6months'               => t('Last six months'),
+        'year'                  => t('Last year')
+      )
+    );
+
+  $form['filter']['voyeur_max'] = array
+    (
+    '#type'             => 'textfield',
+    '#title'            => t('Maximum Number of Nodes'),
+    '#default_value'    => variable_get('voyeur_max', ''),
+    '#size'             => 3,
+    '#maxlength'        => 4,
+    '#required'         => FALSE
+    );
+
+  return system_settings_form($form);
+} // end voyeur_admin()
+
+/**
+ * Validates and sanitizes input from the admin settings form.
+ *
+ * @param $form
+ *    Contains the form.
+ * @param array &$form_state
+ *    Contains form data to be validated.
+ */
+function voyeur_admin_validate($form, &$form_state) {
+  // Width form.
+  $voyeur_width = $form_state['values']['voyeur_width'];
+  $form_state['values']['voyeur_width'] = (int) $voyeur_width;
+  if ($voyeur_width <= 0 || $voyeur_width == 0) {
+    $form_state['values']['voyeur_width'] = 200;
+  }
+
+  // Height form.
+  $voyeur_height = $form_state['values']['voyeur_height'];
+  $form_state['values']['voyeur_height'] = (int) $voyeur_height;
+  if ($voyeur_height <= 0 || $voyeur_height == 0) {
+    $form_state['values']['voyeur_height'] = 250;
+  }
+
+  // Max nodes form.
+  $voyeur_max = $form_state['values']['voyeur_max'];
+  $form_state['values']['voyeur_max'] = (int) $voyeur_max;
+  if ($voyeur_max <= 0 || $voyeur_max == 0) {
+    $form_state['values']['voyeur_max'] = '';
+  }
+} // end voyeur_admin_validate()
+
+/**
+ * Adds forms to the user Thickbox.
+ *
+ * @return array
+ *    Returns all of the forms to be generated.
+ */
+function voyeur_generate_user_forms() {
+  $form = array();
+
+  $form['voyeur_user_tool'] = array
+    (
+    '#type'              => 'select',
+    '#title'            => t('Tool'),
+    '#default_value'    => 'Cirrus',
+    '#options'          => array
+      (
+        'Bubbles'                   => t('Bubbles'),
+        'Cirrus'                    => 'Cirrus',
+        'CorpusTypeFrequenciesGrid' => t('Frequency Grid'),
+        'Links'                     => t('Links'),
+        'Reader'                    => t('Reader'),
+        'CorpusSummary'             => t('Summary'),
+        'WordCountFountain'         => t('Word Count Fountain'),
+      )
+    );
+
+  // Find necessary filters that can be displayed (Function is within voyeurrss.inc).
+  $voyeur_filters = voyeurrss_find_filters(); 
+  
+  // Only provide filters if they exist.
+  if (!empty($voyeur_filters['possible_options'])) {
+    $form['voyeur_user_filters'] = array
+      (
+      '#type'             => 'checkboxes',
+      '#title'            => t('Filters'),
+      '#options'          => $voyeur_filters['possible_options'],
+      '#default_value'    => $voyeur_filters['default_options'],
+      );
+  }
+
+  // Only provide filtering by term if taxonomy enabled.
+  if (module_exists('taxonomy')) {
+    $form['voyeur_user_terms'] = array
+      (
+      '#type'             => 'textfield',
+      '#title'            => t('Filter by Terms'),
+      '#default_value'    => '',
+      '#size'             => 20,
+      '#description'      => t('Seperate terms by commas.') . '  ","'
+      );
+  }
+
+  $form['voyeur_user_time'] = array
+    (
+    '#type'             => 'select',
+    '#title'            => t('Filter by Time'),
+    '#default_value'    => 'month',
+    '#options'          => array
+      (
+        'none'                  => t('None'),
+        'day'                   => t('Last 24 hours'),
+        'week'                  => t('Last week'),
+        '2weeks'                => t('Last two weeks'),
+        'month'                 => t('Last month'),
+        '6months'               => t('Last six months'),
+        'year'                  => t('Last year')
+      )
+    );
+
+  $form['voyeur_user_max'] = array
+    (
+    '#type'             => 'textfield',
+    '#title'            => t('Maximum Number of Nodes'),
+    '#default_value'    => '',
+    '#size'             => 3,
+    '#maxlength'        => 4
+    );
+  
+  return $form;
+} // end voyeur_generate_user_forms()
+
+/**
+* Implementation of hook_link().
+*
+* Adds a link to reveal specific nodes if admin has requested this feature.
+* (In other words, puts a 'Reveal' link below nodes.)
+*
+* @param $type
+*    The type of data we're dealing with.
+* @param $node
+*    The current node in question.
+* @param $teaser
+*    "A 0/1 flag depending on whether the node is displayed with its teaser or its full form (on a node/nid page)."
+*
+* @return array
+*    The new 'Reveal' links to be placed under nodes.
+*/
+function voyeur_link($type, $node = NULL, $teaser = FALSE) {
+  // Only display the 'Reveal' link if user is allowed (or site online).
+  if (!variable_get('site_offline', 0) && user_access('access content')) {
+    if ($type == 'node') { // Only display the link on nodes (and not comments)
+      $by_user = variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => ''));
+      if ($by_user['allow_node'] === 'allow_node') { // Only add link if admin has chosen this option
+        $links = array();
+        $links['reveal_with_voyeur'] = array(
+          'title' => t('Reveal'),
+          'href' => '',
+          'attributes' => array
+              (
+              'title' => t('Analyzes the current node with Voyeur.'),
+              'class' => 'voyeurRevealNode',
+              'name' => $node->nid,
+              'onclick' => "return false;" // Return false used so we don't jump to the href.
+              )
+        );
+        return $links;
+      }
+    }
+  }
+} // end voyeur_link()
+
+/**
+* Implementation of hook_link_alter().
+*
+* Puts the 'Reveal' link at the end of links if admin 
+* has chosen to filter individual nodes for Voyeur.
+*
+* @param array &$links
+*    The links being run through our function. (We're only concerned with 'reveal_with_voyeur'.)
+* @param $node
+*    The current node in question.
+*/
+function voyeur_link_alter(&$links, $node) {
+  if (isset($links['reveal_with_voyeur'])) {
+    $links = array_merge($links, array($links['reveal_with_voyeur']));
+    unset($links['reveal_with_voyeur']); // Get rid of the first 'Reveal' link
+  }
+} // end voyeur_link_alter
+
+/**
+* Implementation of hook_block().
+*
+* Sets up the visual and interactive block of Voyeur on the Drupal site.
+*
+* @param $op
+*    The current operation performed in hook_block().
+* @param $delta
+*    Which block to return.
+*
+* @return array
+*    An array of all of the block content to be displayed.
+*/
+function voyeur_block($op='list', $delta=0) {
+  // Only allow permissions of 'access content' thru and only if site is online.
+  if (!variable_get('site_offline', 0) && user_access('access content')) {
+    if ($op == 'list') {
+      // Generate listing of blocks from this module, for the admin/block page.
+      $block = array();
+      $block[0]['info'] = 'Voyeur';
+      return $block;
+    }
+    elseif ($op == 'view') {
+      // Generate our block content
+      $rss_url = url('', array('absolute' => 'true')) . 'vrss';
+      $by_user = variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => '')); // Create var reference so we don't pass an array to js
+      
+      // Send vars to javascript (voyeur.js).
+      $voyeurJsVars = array(
+        'tool' => check_plain(variable_get('voyeur_tool', 'Cirrus')),
+        'allowAutoReveal' => $by_user['allow_auto_reveal'],
+        'allowUser' => $by_user['allow_user'],
+        'rssUrl' => $rss_url,
+        'viewSeparate' => t('View in separate window')
+      );
+      
+      drupal_add_js(array('voyeur' => $voyeurJsVars), "setting");
+      drupal_add_js(drupal_get_path('module', 'voyeur') .'/thickbox/thickbox.js');
+      drupal_add_css(drupal_get_path('module', 'voyeur') .'/thickbox/thickbox.css');
+      drupal_add_js(drupal_get_path('module', 'voyeur') .'/voyeur.js');
+
+      // Set up the block.
+      $block['subject'] = 'Voyeur';
+      $block['content'] = theme('get_block');
+      return $block;
+    }
+  }
+}  // end voyeur_block()
+
+/**
+* Implementation of hook_theme().
+*
+* Generates the content of voyeur-block.tpl.php to the Voyeur block.
+*/
+function voyeur_theme() {
+  return array
+    (
+    'get_block' => array
+      (
+        'template' => 'voyeur-block',
+        'arguments' => array
+          (
+            'voyeur_forms' => NULL,
+          )
+      )
+);
+} // end voyeur_theme()
+
+/**
+* Supplies the form information in a preprocess method
+* for voyeur_theme, and voyeur-block.tpl.php.
+*
+* @param &$vars
+*    The variables to send to our theme function, and template.
+*
+* @see voyeur_theme()
+* @see voyeur-block.tpl.php
+*/
+function voyeur_preprocess_get_block(&$vars) {
+  $vars['voyeur_forms'] = drupal_get_form('voyeur_generate_user_forms');
+} // end voyeur_preprocess_get_block()
