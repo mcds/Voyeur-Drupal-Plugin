@@ -27,8 +27,9 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
 
   if (allowUser == 'allow_user') {
     // First add elements to the reveal button to launch Thickbox if user can choose options.
+    $('#voyeurReveal').addClass('thickbox').attr('alt', '#TB_inline?height=400&width=325&inlineId=voyeurControls');
+    $('#voyeurReveal').attr('title', 'Voyeur - Reveal your texts');
     // NOTE: THIS IS WHERE YOU CAN CHANGE THICKBOX OPTIONS, HEIGHT AND WIDTH
-    $('#voyeurReveal').addClass('thickbox').attr('alt', '#TB_inline?height=450&width=325&inlineId=voyeurControls');
   }
 
   // If admin has chosen autoReveal, just reveal Voyeur on page load
