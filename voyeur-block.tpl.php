@@ -22,7 +22,7 @@
 
 <div style='text-align: center;'>
   <img id="voyeurLogo" src="<?php print url(NULL, array('absolute' => TRUE)) . drupal_get_path('module', 'voyeur'); ?>/images/voyeur.png" alt="Voyeur <?php print t('logo'); ?>" border="0" style="text-align: center" />
-  <iframe width="<?php print variable_get('voyeur_width', 200); ?>" height="<?php print variable_get('voyeur_height', 250); ?>" src="" style="display:none;" id="voyeurIframe">
+  <iframe width="<?php print variable_get('voyeur_width', 100); ?>%" height="<?php print variable_get('voyeur_height', 250); ?>" src="" style="display:none;" id="voyeurIframe">
     <p>
       Your browser does not support iframes - Voyeur will not run.
     </p>

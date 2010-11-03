@@ -100,8 +100,8 @@ function voyeur_admin() {
   $form['general']['voyeur_width'] = array
     (
     '#type'             => 'textfield',
-    '#title'            => t('Width (px)'),
-    '#default_value'    => variable_get('voyeur_width', 200),
+    '#title'            => t('Width (%)'),
+    '#default_value'    => variable_get('voyeur_width', 100),
     '#size'             => 2,
     '#maxlength'        => 3,
     '#required'         => TRUE,
@@ -224,7 +224,7 @@ function voyeur_admin_validate($form, &$form_state) {
   $voyeur_width = $form_state['values']['voyeur_width'];
   $form_state['values']['voyeur_width'] = (int) $voyeur_width;
   if ($voyeur_width <= 0 || $voyeur_width == 0) {
-    $form_state['values']['voyeur_width'] = 200;
+    $form_state['values']['voyeur_width'] = 100;
   }
 
   // Height form.
