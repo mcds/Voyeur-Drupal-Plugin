@@ -136,7 +136,7 @@ function loadVoyeur(voyeurTool, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage,
     // This is the URL to be sent to retrieve Voyeur information.
     src: fullVoyeurUrl
   }).removeAttr('style'); // Remove 'display:none'.
-  voyeurFullPage.html('<small><a href="'+ fullVoyeurUrl +'" target="_blank">'+ viewSeparate +'</a></small>');
+  //voyeurFullPage.html('<small><a href="'+ fullVoyeurUrl +'" target="_blank">'+ viewSeparate +'</a></small>');
 } // end loadVoyeur()
 
 /**

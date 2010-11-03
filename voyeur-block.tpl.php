@@ -20,22 +20,23 @@
  */
 ?>
 
-<img id="voyeurLogo" src="<?php print url(NULL, array('absolute' => TRUE)) . drupal_get_path('module', 'voyeur'); ?>/images/voyeur.png" alt="Voyeur <?php print t('logo'); ?>" border="0" style="text-align: center" />
-<iframe width="<?php print variable_get('voyeur_width', 200); ?>" height="<?php print variable_get('voyeur_height', 250); ?>" src="" style="display:none;" id="voyeurIframe">
-  <p>
-    Your browser does not support iframes - Voyeur will not run.
-  </p>
-</iframe>
-<div id='voyeurFullPage'><!-- 'View full page' link placed dynamically here. --></div>
-<br />
-<input type="button" id="voyeurReveal" value="Reveal" />
-<div style="display:none;">
-  <div id="voyeurControls">
-    <br />
-    <h3><strong>What should Voyeur reveal?</strong></h3>
-    <small><?php print t('These settings determine which nodes') . ' Voyeur ' . t('will analyze or "reveal".'); ?></small>
-    <?php print $voyeur_forms; ?>
-    <br />
-    <input type="button" id="voyeurOptionsSubmit" value="Submit" onclick="parent.tb_remove();" />
+<div style='text-align: center;'>
+  <img id="voyeurLogo" src="<?php print url(NULL, array('absolute' => TRUE)) . drupal_get_path('module', 'voyeur'); ?>/images/voyeur.png" alt="Voyeur <?php print t('logo'); ?>" border="0" style="text-align: center" />
+  <iframe width="<?php print variable_get('voyeur_width', 200); ?>" height="<?php print variable_get('voyeur_height', 250); ?>" src="" style="display:none;" id="voyeurIframe">
+    <p>
+      Your browser does not support iframes - Voyeur will not run.
+    </p>
+  </iframe>
+  <div id='voyeurFullPage'><!-- 'View full page' link placed dynamically here. --></div>
+  <input type="button" id="voyeurReveal" value="Reveal" />
+  <div style="display:none;">
+    <div id="voyeurControls">
+      <br />
+      <h3><strong>What should Voyeur reveal?</strong></h3>
+      <small><?php print t('These settings determine which nodes') . ' Voyeur ' . t('will analyze or "reveal".'); ?></small>
+      <?php print $voyeur_forms; ?>
+      <br />
+      <input type="button" id="voyeurOptionsSubmit" value="Submit" onclick="parent.tb_remove();" />
+    </div>
   </div>
 </div>
