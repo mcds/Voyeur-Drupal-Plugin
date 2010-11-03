@@ -124,9 +124,10 @@ function voyeur_admin() {
       (
         'allow_auto_reveal' => 'Voyeur ' . t('launches automatically on page load.'),
         'allow_user'        => t('Allow users to choose') . ' Voyeur ' . t('options.'),
-        'allow_node'        => t('Generate links to reveal individual nodes.')
+        'allow_node'        => t('Generate links to reveal individual nodes.'),
+        'remove_func_words' => t('Remove function words like "the".')
       ),
-  '#default_value'  => variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => ''))
+  '#default_value'  => variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => '', 'remove_func_words' => 'remove_func_words'))
   );
 
   $form['filter'] = array(
@@ -342,7 +343,7 @@ function voyeur_link($type, $node = NULL, $teaser = FALSE) {
   // Only display the 'Reveal' link if user is allowed (or site online).
   if (!variable_get('site_offline', 0) && user_access('access content')) {
     if ($type == 'node') { // Only display the link on nodes (and not comments)
-      $by_user = variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => ''));
+      $by_user = variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => '', 'remove_func_words' => 'remove_func_words'));
       if ($by_user['allow_node'] === 'allow_node') { // Only add link if admin has chosen this option
         $links = array();
         $links['reveal_with_voyeur'] = array(
@@ -405,13 +406,14 @@ function voyeur_block($op='list', $delta=0) {
     elseif ($op == 'view') {
       // Generate our block content
       $rss_url = url('', array('absolute' => 'true')) . 'vrss';
-      $by_user = variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => '')); // Create var reference so we don't pass an array to js
+      $by_user = variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => '', 'remove_func_words' => 'remove_func_words')); // Create var reference so we don't pass an array to js
       
       // Send vars to javascript (voyeur.js).
       $voyeurJsVars = array(
         'tool' => check_plain(variable_get('voyeur_tool', 'Cirrus')),
         'allowAutoReveal' => $by_user['allow_auto_reveal'],
         'allowUser' => $by_user['allow_user'],
+        'removeFuncWords' => $by_user['remove_func_words'],
         'rssUrl' => $rss_url,
         'viewSeparate' => t('View in separate window')
       );

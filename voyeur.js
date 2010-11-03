@@ -17,6 +17,7 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
   var voyeurTool = Drupal.settings.voyeur.tool;
   var allowAutoReveal = Drupal.settings.voyeur.allowAutoReveal;
   var allowUser = Drupal.settings.voyeur.allowUser;
+  var removeFuncWords = Drupal.settings.voyeur.removeFuncWords;
   var rssUrl = Drupal.settings.voyeur.rssUrl;
   var viewSeparate = Drupal.settings.voyeur.viewSeparate;
   var rssUrlStrip = '';
@@ -37,7 +38,7 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
     }
     rssUrl = Drupal.settings.voyeur.rssUrl + '/'; // Set to default URL again for fresh click.
     rssUrlStrip = rssUrl.replace(/[\W]/g, '');
-    loadVoyeur(voyeurTool, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
+    loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
   }
 
   // ===============================
@@ -87,13 +88,13 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
         rssUrl += rawurlencode(rssParams);
         rssUrlStrip = rssUrl.replace(/[\W]/g, '');
         
-        loadVoyeur(voyeurTool, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
+        loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
       });
     } else { // If user hit 'Reveal' and user defined options not turned on, just load Voyeur and hide 'Reveal' button.
       $('#voyeurReveal').attr('style', 'display:none;');
       rssUrl = Drupal.settings.voyeur.rssUrl + '/'; // Set to default URL again for fresh click.
       rssUrlStrip = rssUrl.replace(/[\W]/g, '');
-      loadVoyeur(voyeurTool, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
+      loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
     }
     });
   
@@ -108,7 +109,7 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
       rssUrl += rawurlencode(rssParams);
       rssUrlStrip = rssUrl.replace(/[\W]/g, '');
   
-      loadVoyeur(voyeurTool, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
+      loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
     });
 } // end function(context)
 
@@ -117,6 +118,8 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
  *
  * @param voyeurTool
  *  The value of the selected tool by the user (within the Thickbox).
+ * @param removeFuncWords
+ *  Whether or not Voyeur removes function words. (Like 'the'.)
  * @param rssUrl
  *  The final, passed URL to our Voyeur RSS feed.
  * @param rssUrlStrip
@@ -128,8 +131,11 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
  * @param viewSeparate
  *  A translated string for viewing Voyeur in a separate window.
  */
-function loadVoyeur(voyeurTool, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate) {
+function loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate) {
   var fullVoyeurUrl = 'http://voyeurtools.org/tool/' + voyeurTool + '/?inputFormat=RSS2&splitDocuments=true&corpus=' + rssUrlStrip + '&archive=' + rssUrl;
+  if (removeFuncWords === 'remove_func_words') {
+    fullVoyeurUrl += '&stopList=stop.en.taporware.txt';
+  }
   voyeurLogo.attr('style', 'display:none;'); // Hide the Voyeur logo.
   // Change the iFrame link to the custom URL for Voyeur, and remove the iFrame from being hidden.
   voyeurIframe.attr({

@@ -42,7 +42,7 @@ function voyeurrss_feed() {
  */
 function voyeurrss_find_items() {
   $default_filters = voyeurrss_find_filters();
-  $by_user = variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => ''));
+  $by_user = variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => '', 'remove_func_words' => 'remove_func_words'));
 
   // == Read in filtering options ============================================================
 
