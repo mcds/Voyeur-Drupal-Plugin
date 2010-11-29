@@ -24,6 +24,7 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
   var voyeurLogo = $('#voyeurLogo');
   var voyeurFullPage = $('#voyeurFullPage');
   var voyeurIframe = $('#voyeurIframe');
+  var ajaxRef = $.ajax; // Create reference to jQuery's AJAX function.
 
   if (allowUser == 'allow_user') {
     // First add elements to the reveal button to launch Thickbox if user can choose options.
@@ -39,7 +40,7 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
     }
     rssUrl = Drupal.settings.voyeur.rssUrl + '/'; // Set to default URL again for fresh click.
     rssUrlStrip = rssUrl.replace(/[\W]/g, '');
-    loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
+    loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
   }
 
   // ===============================
@@ -88,14 +89,15 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
 
         rssUrl += rawurlencode(rssParams);
         rssUrlStrip = rssUrl.replace(/[\W]/g, '');
-        
-        loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
+
+        loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
+        $('#voyeurOptionsSubmit').unbind('click');
       });
     } else { // If user hit 'Reveal' and user defined options not turned on, just load Voyeur and hide 'Reveal' button.
       $('#voyeurReveal').attr('style', 'display:none;');
       rssUrl = Drupal.settings.voyeur.rssUrl + '/'; // Set to default URL again for fresh click.
       rssUrlStrip = rssUrl.replace(/[\W]/g, '');
-      loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
+      loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
     }
     });
   
@@ -110,7 +112,7 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
       rssUrl += rawurlencode(rssParams);
       rssUrlStrip = rssUrl.replace(/[\W]/g, '');
   
-      loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate);
+      loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
     });
 } // end function(context)
 
@@ -131,9 +133,21 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
  *  A reference to the voyeurIframe element on the page.
  * @param viewSeparate
  *  A translated string for viewing Voyeur in a separate window.
+ * @param ajaxRef
+ *  A reference to jQuery's ajax function.
  */
-function loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate) {
-  var fullVoyeurUrl = 'http://voyeurtools.org/tool/' + voyeurTool + '/?inputFormat=RSS2&splitDocuments=true&corpus=' + rssUrlStrip + '&archive=' + rssUrl;
+function loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef) {
+  // Find recent article corpus timestamp first.
+    ajaxRef({
+      type: 'GET',
+      dataType: 'text',
+      async: false, // Wait until ajax completes.
+      url: rssUrl + '&find_timestamp=1',
+      success: function(msg) {
+        unixTimestamp = msg;
+      }
+    });
+  var fullVoyeurUrl = 'http://voyeurtools.org/tool/' + voyeurTool + '/?inputFormat=RSS2&splitDocuments=true&corpus=' + rssUrlStrip + unixTimestamp + '&archive=' + rssUrl;
   if (removeFuncWords === 'remove_func_words') {
     fullVoyeurUrl += '&stopList=stop.en.taporware.txt';
   }

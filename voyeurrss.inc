@@ -6,6 +6,7 @@
  * Handles Voyeur RSS feed calls from voyeur.module.
  *
  * Builds the RSS feed to be sent to Voyeur. (http://voyeurtools.org).
+ * Also generates a most recent corpus timestamp to return to voyeur.js.
  *
  * The Voyeur module implements many concepts and methods derived from
  * the CommentRSS module found here: http://drupal.org/project/commentrss.
@@ -13,37 +14,44 @@
  */
 
 /**
- * Menu callback; publish an RSS feed.
+ * Menu callback; publish an RSS feed or publish corpus timestamp.
  */
 function voyeurrss_handler() {
-  if (call_user_func('voyeurrss_feed')) {
+  if (call_user_func('voyeurrss_publish')) {
     return;
   }
   drupal_not_found();
 } // end voyeurrss_handler()
 
 /**
- * Publish a feed for all comments on the site.
+ * Publish a feed or corpus timestamp.
  *
  * @return boolean
  *    Returns true if our function calls were successful.
  */
-function voyeurrss_feed() {
-  $items = voyeurrss_find_items();
-  voyeurrss_format_feed($items);
+function voyeurrss_publish() {
+  // If we're searching for the unix timestamp, just print return value of voyeurrss_find_items().
+  if ($_GET['find_timestamp'] == 1) {
+    print voyeurrss_find_items();
+  } else {
+    $items = voyeurrss_find_items();
+    voyeurrss_format_feed($items);
+  }
   return TRUE;
-} // end voyeurrss_feed()
+} // end voyeurrss_publish()
 
 /**
- * Find items to be generated within RSS for the Voyeur module.
+ * Find items to be generated within RSS for the Voyeur module or the corpus timestamp.
  *
+ * @return int
+ *  The most recent timestamp in the corpus.
  * @return array
  *   Found items / nodes to construct RSS feed.
  */
 function voyeurrss_find_items() {
   $default_filters = voyeurrss_find_filters();
   $by_user = variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => '', 'remove_func_words' => 'remove_func_words'));
-
+  
   // == Read in filtering options ============================================================
 
   // ===========================
@@ -53,14 +61,24 @@ function voyeurrss_find_items() {
   if (isset($_GET['n']) && $by_user['allow_node'] === 'allow_node') {
     // Clean up $_GET so only nid exists
     $clean_get = array_intersect_key($_GET, array('n' => ''));
-    $items = voyeurrss_generate_content(node_load(intval($clean_get['n'])));
+    
+    // If we're generating timestamp, find it and don't generate RSS content.
+    if (isset($_GET['find_timestamp']) && $_GET['find_timestamp'] == 1) {
+      // Build individual node SQL query.
+      $sql = 'SELECT timestamp FROM {node_revisions} WHERE nid = ';
+      $sql .= (int) $clean_get['n'] . ' ';
+      $sql .= 'ORDER BY timestamp DESC LIMIT 1';
+      $nodes = db_query(db_rewrite_sql($sql));
+    } else {
+      $items = voyeurrss_generate_content(node_load(intval($clean_get['n'])));
+    }
     unset($clean_get);
   }
 
   // ===========================
   // ==     MULTIPLE NODES    ==
   // ==    (by user filter)   ==
-  // ===========================    
+  // ===========================
 
   elseif ((isset($_GET['filters']) || isset($_GET['terms']) || isset($_GET['time']) || isset($_GET['max'])) && $by_user['allow_user'] === 'allow_user') {
     // Clean up $_GET so only user filters exist
@@ -116,11 +134,11 @@ function voyeurrss_find_items() {
 
   // == Find RSS items (via SQL) ============================================================
 
-  // If $items doesn't exist yet, it means we're NOT reading in specific node,
+  // If $items and $nodes doesn't exist yet, it means we're NOT reading in specific node,
   // and therefore reading in params from user options or just running Voyeur
   // from admin options. So, begin constructing the SQL query to find specific
   // items (aka nodes) pertaining to filters.
-  if (!isset($items)) {
+  if (!isset($items) && !isset($nodes)) {
     $params = array();
     $joins = '';
     $where = '';
@@ -196,12 +214,20 @@ function voyeurrss_find_items() {
     else {
       $nodes = db_query(db_rewrite_sql($sql), $params);
     }
-
-    // Add all of the nodes to be published to $items.
-    $items = '';
-    while ($node = db_fetch_object($nodes)) {
-      $items .= voyeurrss_generate_content($node);
+    
+    if (!isset($_GET['find_timestamp']) || $_GET['find_timestamp'] != 1) {
+      // Add all of the nodes to be published to $items.
+      $items = '';
+      while ($node = db_fetch_object($nodes)) {
+        $items .= voyeurrss_generate_content($node);
+      }
     }
+  }
+  
+  // Generate most recent timestamp via ajax if $_GET param says so.
+  if (isset($_GET['find_timestamp']) && $_GET['find_timestamp'] == 1) {
+    $unixNode = db_fetch_object($nodes);
+    return intval($unixNode->timestamp);
   }
 
   return $items;
