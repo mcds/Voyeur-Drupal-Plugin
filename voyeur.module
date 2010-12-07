@@ -89,6 +89,9 @@ function voyeur_menu() {
 *    An array of forms for the Voyeur admin settings page.
 */
 function voyeur_admin() {
+	// First add the dynamic tool options javascript.
+	drupal_add_js(drupal_get_path('module', 'voyeur') .'/voyeur-admin.js');
+
   $form = array();
   
   $form['general'] = array(
@@ -240,6 +243,15 @@ function voyeur_admin_validate($form, &$form_state) {
   if ($voyeur_max <= 0 || $voyeur_max == 0) {
     $form_state['values']['voyeur_max'] = '';
   }
+  
+  // Check dynamic tool loading options.
+  // If remove_function_words is on, and it is NOT allowed to be paired with the tool, set it to 0.
+	if ($form_state['values']['voyeur_by_user']['remove_func_words'] == 'remove_func_words' && !in_array($form_state['values']['voyeur_tool'], array('Cirrus', 'CorpusTypeFrequenciesGrid', 'Links', 'CorpusSummary'))) {
+		$form_state['values']['voyeur_by_user']['remove_func_words'] = 0;
+	}
+ 
+  //print_r($form_state);
+  
 } // end voyeur_admin_validate()
 
 /**
