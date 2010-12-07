@@ -283,10 +283,12 @@ function voyeurrss_generate_content($node) {
       'key' => 'pubDate',
       'value' => date('r', $node->timestamp)
     ),
+    /* Banish dc:creator as creates error within Voyeur RSS reader
     array(
       'key' => 'dc:creator',
       'value' => check_plain($node->name)
     ),
+    */
     array(
       'key' => 'guid',
       'value' => $node->nid . ' at ' . $base_url,
