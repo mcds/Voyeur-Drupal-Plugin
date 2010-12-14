@@ -128,10 +128,28 @@ function voyeur_admin() {
         'allow_auto_reveal' => 'Voyeur ' . t('launches automatically on page load.'),
         'allow_user'        => t('Allow users to choose') . ' Voyeur ' . t('options.'),
         'allow_node'        => t('Generate links to reveal individual nodes.'),
-        'remove_func_words' => t('Remove function words like "the".')
+        'remove_func_words' => t('Remove function words like "the".'),
+        
       ),
   '#default_value'  => variable_get('voyeur_by_user', array('allow_auto_reveal' => 'allow_auto_reveal', 'allow_user' => '', 'allow_node' => '', 'remove_func_words' => 'remove_func_words'))
   );
+  
+  $form['general']['voyeur_limit'] = array
+    (
+    '#type'             => 'textfield',
+    '#title'            => t('Number of words to display'),
+    '#default_value'    => variable_get('voyeur_limit', ''),
+    '#size'             => 2,
+    '#maxlength'        => 3,
+    );
+
+  $form['general']['voyeur_query'] = array
+    (
+    '#type'             => 'textfield',
+    '#title'            => t('Search term'),
+    '#default_value'    => variable_get('voyeur_query', ''),
+    '#size'             => 10,
+    );
 
   $form['filter'] = array(
     '#type' => 'fieldset',
@@ -246,10 +264,26 @@ function voyeur_admin_validate($form, &$form_state) {
   
   // Check dynamic tool loading options.
   // If remove_function_words is on, and it is NOT allowed to be paired with the tool, set it to 0.
-	if ($form_state['values']['voyeur_by_user']['remove_func_words'] == 'remove_func_words' && !in_array($form_state['values']['voyeur_tool'], array('Cirrus', 'CorpusTypeFrequenciesGrid', 'Links', 'CorpusSummary'))) {
+	if ($form_state['values']['voyeur_by_user']['remove_func_words'] == 'remove_func_words' && !in_array($form_state['values']['voyeur_tool'], array('Bubbles', 'Cirrus', 'CorpusTypeFrequenciesGrid', 'Links', 'CorpusSummary'))) {
 		$form_state['values']['voyeur_by_user']['remove_func_words'] = 0;
 	}
- 
+
+  // Limit form.
+  if ($form_state['values']['voyeur_tool'] == 'Cirrus') {
+		$voyeur_limit = $form_state['values']['voyeur_limit'];
+		$form_state['values']['voyeur_limit'] = (int) $voyeur_limit;
+		if ($voyeur_limit <= 0 || $voyeur_limit == 0) {
+			$form_state['values']['voyeur_limit'] = '';
+		}
+  } else {
+  	$form_state['values']['voyeur_limit'] = '';
+  }
+
+	// Query form check.
+	if ($form_state['values']['voyeur_tool'] != 'CorpusTypeFrequenciesGrid') {
+		$form_state['values']['voyeur_query'] = '';
+	}
+
   //print_r($form_state);
   
 } // end voyeur_admin_validate()
@@ -426,6 +460,8 @@ function voyeur_block($op='list', $delta=0) {
         'allowAutoReveal' => $by_user['allow_auto_reveal'],
         'allowUser' => $by_user['allow_user'],
         'removeFuncWords' => $by_user['remove_func_words'],
+        'limit' => variable_get('voyeur_limit', ''),
+        'query' => check_plain(variable_get('voyeur_query', '')),
         'rssUrl' => $rss_url,
         'viewSeparate' => t('View in separate window')
       );

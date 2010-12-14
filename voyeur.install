@@ -37,7 +37,9 @@ function voyeur_uninstall() {
     'voyeur_filters',
     'voyeur_terms',
     'voyeur_time',
-    'voyeur_max'
+    'voyeur_max',
+    'voyeur_limit',
+    'voyeur_query'
   );
   foreach ($variables as $variable) {
     variable_del($variable);

@@ -18,6 +18,8 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
   var allowAutoReveal = Drupal.settings.voyeur.allowAutoReveal;
   var allowUser = Drupal.settings.voyeur.allowUser;
   var removeFuncWords = Drupal.settings.voyeur.removeFuncWords;
+  var voyeurLimit = Drupal.settings.voyeur.limit;
+  var voyeurQuery = Drupal.settings.voyeur.query;
   var rssUrl = Drupal.settings.voyeur.rssUrl;
   var viewSeparate = Drupal.settings.voyeur.viewSeparate;
   var rssUrlStrip = '';
@@ -40,7 +42,7 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
     }
     rssUrl = Drupal.settings.voyeur.rssUrl + '/'; // Set to default URL again for fresh click.
     rssUrlStrip = rssUrl.replace(/[\W]/g, '');
-    loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
+    loadVoyeur(voyeurTool, removeFuncWords, voyeurLimit, voyeurQuery, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
   }
 
   // ===============================
@@ -90,14 +92,14 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
         rssUrl += rawurlencode(rssParams);
         rssUrlStrip = rssUrl.replace(/[\W]/g, '');
 
-        loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
+        loadVoyeur(voyeurTool, removeFuncWords, voyeurLimit, voyeurQuery, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
         $('#voyeurOptionsSubmit').unbind('click');
       });
     } else { // If user hit 'Reveal' and user defined options not turned on, just load Voyeur and hide 'Reveal' button.
       $('#voyeurReveal').attr('style', 'display:none;');
       rssUrl = Drupal.settings.voyeur.rssUrl + '/'; // Set to default URL again for fresh click.
       rssUrlStrip = rssUrl.replace(/[\W]/g, '');
-      loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
+      loadVoyeur(voyeurTool, removeFuncWords, voyeurLimit, voyeurQuery, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
     }
     });
   
@@ -112,7 +114,7 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
       rssUrl += rawurlencode(rssParams);
       rssUrlStrip = rssUrl.replace(/[\W]/g, '');
   
-      loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
+      loadVoyeur(voyeurTool, removeFuncWords, voyeurLimit, voyeurQuery, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef);
     });
 } // end function(context)
 
@@ -136,7 +138,7 @@ Drupal.behaviors.VoyeurBehavior = function (context) {
  * @param ajaxRef
  *  A reference to jQuery's ajax function.
  */
-function loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef) {
+function loadVoyeur(voyeurTool, removeFuncWords, voyeurLimit, voyeurQuery, rssUrl, rssUrlStrip, voyeurLogo, voyeurFullPage, voyeurIframe, viewSeparate, ajaxRef) {
   // Find recent article corpus timestamp first.
     ajaxRef({
       type: 'GET',
@@ -150,6 +152,12 @@ function loadVoyeur(voyeurTool, removeFuncWords, rssUrl, rssUrlStrip, voyeurLogo
   var fullVoyeurUrl = 'http://voyeurtools.org/tool/' + voyeurTool + '/?inputFormat=RSS2&splitDocuments=true&corpus=' + rssUrlStrip + unixTimestamp + '&archive=' + rssUrl;
   if (removeFuncWords === 'remove_func_words') {
     fullVoyeurUrl += '&stopList=stop.en.taporware.txt';
+  }
+  if (voyeurTool == 'Cirrus' && voyeurLimit != '') {
+    fullVoyeurUrl += '&limit=' + voyeurLimit;
+  }
+  if (voyeurTool == 'CorpusTypeFrequenciesGrid' && voyeurQuery != '') {
+    fullVoyeurUrl += '&query=' + voyeurQuery;
   }
   voyeurLogo.attr('style', 'display:none;'); // Hide the Voyeur logo.
   // Change the iFrame link to the custom URL for Voyeur, and remove the iFrame from being hidden.
